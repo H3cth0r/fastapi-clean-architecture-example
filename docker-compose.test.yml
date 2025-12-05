@@ -1,0 +1,31 @@
+services:
+  postgres:
+    container_name: postgres-test
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - 5432:5432
+    networks:
+      - test-network
+
+  api:
+    container_name: api-test
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    env_file:
+      - .env.test
+    tty: true
+    depends_on:
+      - postgres
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge

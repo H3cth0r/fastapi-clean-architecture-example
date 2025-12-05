@@ -1,0 +1,35 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - POSTGRES_URL=postgres://tasks:tasks@postgres:5432/tasks_db
+      - TEST_POSTGRES_BASE_URL=postgres://tasks:tasks@postgres:5432
+      - PORT=8000
+      - DEFAULT_API_KEY=dev-test-api-key-12345
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=tasks
+      - POSTGRES_PASSWORD=tasks
+      - POSTGRES_DB=tasks_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tasks -d tasks_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

@@ -1,0 +1,75 @@
+from uuid import UUID
+
+from api.data.postgres_models import ClientPostgres, TaskPostgres
+from api.domain.entities import Client, Task
+from api.domain.enums import TaskPriority, TaskStatus
+from api.domain.postgres_adapters import client_postgres_adapter, task_postgres_adapter
+
+# ============================================================================
+# CLIENT REPOSITORIES
+# ============================================================================
+
+
+async def repo_get_client_by_api_key(*, api_key: str) -> Client | None:
+    """Get active client by API key"""
+    model = await ClientPostgres.get_or_none(api_key=api_key, is_active=True)
+    return client_postgres_adapter(model) if model else None
+
+
+# ============================================================================
+# TASK REPOSITORIES
+# ============================================================================
+
+
+async def repo_create_task(*, task: Task) -> None:
+    """Create new task in database"""
+    await TaskPostgres.create(
+        task_id=task.task_id,
+        client_id=task.client_id,
+        title=task.title,
+        description=task.description,
+        status=task.status.value,
+        priority=task.priority.value,
+        due_date=task.due_date,
+    )
+
+
+async def repo_get_task_by_id(*, task_id: UUID) -> Task | None:
+    """Get task by ID"""
+    model = await TaskPostgres.get_or_none(task_id=task_id)
+    return task_postgres_adapter(model) if model else None
+
+
+async def repo_list_client_tasks(
+    *,
+    client_id: UUID,
+    status: TaskStatus | None = None,
+    priority: TaskPriority | None = None,
+) -> list[Task]:
+    """List client tasks with optional filtering by status and priority"""
+    query = TaskPostgres.filter(client_id=client_id)
+
+    if status:
+        query = query.filter(status=status.value)
+    if priority:
+        query = query.filter(priority=priority.value)
+
+    models = await query.order_by("-created_at")
+    return [t for m in models if (t := task_postgres_adapter(m)) is not None]
+
+
+async def repo_update_task(*, task: Task) -> None:
+    """Update task in database"""
+    await TaskPostgres.filter(task_id=task.task_id).update(
+        title=task.title,
+        description=task.description,
+        status=task.status.value,
+        priority=task.priority.value,
+        due_date=task.due_date,
+        updated_at=task.updated_at,
+    )
+
+
+async def repo_delete_task(*, task_id: UUID) -> None:
+    """Delete task from database (hard delete)"""
+    await TaskPostgres.filter(task_id=task_id).delete()

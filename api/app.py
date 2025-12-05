@@ -1,3 +1,5 @@
+import logging.config
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -7,7 +9,17 @@ from tortoise.contrib.fastapi import register_tortoise
 
 from api.misc.config import TORTOISE_ORM, config
 from api.misc.fastapi import catch_exceptions_middleware, validation_exception_handler
+
+# Import logging configuration FIRST to ensure it's applied before anything else
+from api.misc.logging import LOG_LEVEL, LOGGING_CONFIG, get_logger
+
+# Apply logging configuration immediately
+logging.config.dictConfig(LOGGING_CONFIG)
+
 from api.presentation.resources import health_router, tasks_router
+
+# Initialize logger
+logger = get_logger()
 
 
 def create_app() -> FastAPI:
@@ -70,6 +82,6 @@ if __name__ == "__main__":
         factory=True,
         host="0.0.0.0",
         port=config.PORT,
-        log_level="info",
+        log_level=LOG_LEVEL.lower(),  # Use environment-aware log level
         reload=not config.is_production(),
     )

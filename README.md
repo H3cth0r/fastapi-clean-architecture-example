@@ -122,6 +122,43 @@ All endpoints return responses in envelope format:
 - [Docker](https://www.docker.com/get-started/) and Docker Compose
 - [Python 3.12+](https://www.python.org/downloads/release/python-312/) (for local development)
 - [Poetry](https://python-poetry.org/docs/) (for local development)
+- [PostgreSQL](https://www.postgresql.org/) (for running tests locally)
+- [pre-commit](https://pre-commit.com/) (for code quality hooks)
+
+### Local PostgreSQL Setup (for Tests)
+
+To run tests locally, you need PostgreSQL installed and running:
+
+**macOS** (using Homebrew):
+
+```bash
+# Install PostgreSQL
+brew install postgresql@16
+
+# Start PostgreSQL service
+brew services start postgresql@16
+
+# Or use Postgres.app from https://postgresapp.com/
+```
+
+**Ubuntu/Debian**:
+
+```bash
+sudo apt-get install postgresql-16
+sudo systemctl start postgresql
+```
+
+**Windows**:
+
+Download and install from [postgresql.org](https://www.postgresql.org/download/windows/)
+
+**Verify PostgreSQL is running**:
+
+```bash
+psql postgres -c "SELECT version();"
+```
+
+**Note**: The test suite automatically creates and destroys a `testdb` database. You don't need to create any databases manually.
 
 ## Quick Start
 
@@ -219,46 +256,62 @@ The test suite includes:
    - Use test database automatically created/destroyed per test
    - Test adapters and repositories
 
-### Running Tests with Docker
+### Running Tests Locally (Recommended for Development)
 
-**Option 1: One-off test runs**
+Tests run against a local PostgreSQL instance for faster feedback:
 
 ```bash
+# Ensure PostgreSQL is running locally (see Prerequisites)
+
+# Install dependencies
+poetry install
+
+# Activate poetry environment
+poetry shell
+
 # Run all tests
-docker compose run --rm api pytest
+pytest
 
 # Run with coverage report
-docker compose run --rm api pytest --cov
+pytest --cov --cov-report=html
 
-# Run specific test directory
-docker compose run --rm api pytest api/domain/tests/
+# Run specific tests
+pytest -k "test_create_task"
 
-# Run specific test file
-docker compose run --rm api pytest api/domain/tests/test_usecases.py
-
-# Run only property-based tests
-docker compose run --rm api pytest -k "hypothesis" -v
+# Verbose output with Hypothesis statistics
+pytest -v --hypothesis-show-statistics
 ```
 
-**Option 2: Interactive testing (recommended for development)**
+**Requirements**:
 
-This is the preferred method when actively developing - run tests in an interactive shell while services are running:
+- PostgreSQL must be running locally
+- Default `postgres` user must be accessible
+- Environment configured via `.env.test`
+- Test suite automatically creates/destroys `testdb` database
+
+### Running Tests in Docker (CI/CD)
+
+For continuous integration or if you don't have PostgreSQL installed locally:
 
 ```bash
-# Terminal 1: Start services (keep running)
-docker compose up
+# Run tests in Docker environment
+docker-compose -f docker-compose.test.yml run --rm api pytest
 
-# Terminal 2: Access interactive shell
-docker compose exec api /bin/bash -l
+# With coverage
+docker-compose -f docker-compose.test.yml run --rm api pytest --cov
 
-# Inside container: Run tests as needed
-pytest                                    # All tests
-pytest --cov                              # With coverage
-pytest api/domain/tests/                  # Specific directory
-pytest -k "test_create_task"              # Specific test
-pytest -v                                 # Verbose output
-pytest --hypothesis-show-statistics       # See Hypothesis stats
+# Run specific test directory
+docker-compose -f docker-compose.test.yml run --rm api pytest api/domain/tests/
+
+# Run only property-based tests
+docker-compose -f docker-compose.test.yml run --rm api pytest -k "hypothesis" -v
 ```
+
+**When to use Docker for tests**:
+
+- GitHub Actions CI/CD pipeline
+- When you don't have PostgreSQL installed locally
+- Testing the full containerized environment
 
 ### Understanding Hypothesis (Property-Based Testing)
 
@@ -409,7 +462,7 @@ When the application is running with `docker compose up`, you can connect to the
 **Connection URL:**
 
 ```
-postgres://tasks:tasks@localhost:5432/tasks_db
+postgres://postgres:postgres@localhost:5432/tasks_db
 ```
 
 **Or use these individual connection parameters:**
@@ -417,13 +470,13 @@ postgres://tasks:tasks@localhost:5432/tasks_db
 - **Host**: `localhost`
 - **Port**: `5432`
 - **Database**: `tasks_db`
-- **User**: `tasks`
-- **Password**: `tasks`
+- **User**: `postgres`
+- **Password**: `postgres`
 
 **Example with psql (command line):**
 
 ```bash
-psql postgres://tasks:tasks@localhost:5432/tasks_db
+psql postgres://postgres:postgres@localhost:5432/tasks_db
 ```
 
 ### Database Migrations with Aerich

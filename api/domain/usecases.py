@@ -15,6 +15,10 @@ from api.domain.exceptions import (
     TaskAccessDeniedException,
     TaskNotFoundException,
 )
+from api.misc.logging import get_logger
+
+# Initialize logger for use cases
+logger = get_logger()
 
 
 async def create_task(
@@ -33,6 +37,11 @@ async def create_task(
     - Title is required
     - Priority defaults to medium
     """
+    logger.info(
+        f"[api.domain.usecases:create_task] Creating task '{title}' "
+        f"for client {client_id} with priority {priority if isinstance(priority, str) else priority.value}"
+    )
+
     now = datetime.now(UTC)
 
     task = Task(
@@ -48,6 +57,12 @@ async def create_task(
     )
 
     await repo_create_task(task=task)
+
+    logger.info(
+        f"[api.domain.usecases:create_task] Task {task.task_id} created successfully "
+        f"with status {task.status.value}"
+    )
+
     return task
 
 
@@ -63,13 +78,26 @@ async def get_task_by_id(
     - Task must exist
     - Task must belong to requesting client
     """
+    logger.info(
+        f"[api.domain.usecases:get_task_by_id] Retrieving task {task_id} for client {client_id}"
+    )
+
     task = await repo_get_task_by_id(task_id=task_id)
 
     if not task:
+        logger.error(f"[api.domain.usecases:get_task_by_id] Task {task_id} not found")
         raise TaskNotFoundException()
 
     if task.client_id != client_id:
+        logger.warning(
+            f"[api.domain.usecases:get_task_by_id] Access denied: "
+            f"task {task_id} belongs to client {task.client_id}, requested by {client_id}"
+        )
         raise TaskAccessDeniedException()
+
+    logger.info(
+        f"[api.domain.usecases:get_task_by_id] Task {task_id} retrieved successfully"
+    )
 
     return task
 
@@ -88,11 +116,28 @@ async def list_client_tasks(
     - Can filter by status and/or priority
     - Ordered by creation date (newest first)
     """
-    return await repo_list_client_tasks(
+    filters = []
+    if status:
+        filters.append(f"status={status.value}")
+    if priority:
+        filters.append(f"priority={priority.value}")
+
+    filter_str = f" with filters: {', '.join(filters)}" if filters else ""
+    logger.info(
+        f"[api.domain.usecases:list_client_tasks] Listing tasks for client {client_id}{filter_str}"
+    )
+
+    tasks = await repo_list_client_tasks(
         client_id=client_id,
         status=status,
         priority=priority,
     )
+
+    logger.info(
+        f"[api.domain.usecases:list_client_tasks] Retrieved {len(tasks)} tasks for client {client_id}"
+    )
+
+    return tasks
 
 
 async def update_task(
@@ -113,29 +158,48 @@ async def update_task(
     - Cannot reopen completed tasks
     - All fields are optional (partial update)
     """
+    logger.info(
+        f"[api.domain.usecases:update_task] Updating task {task_id} for client {client_id}"
+    )
+
     task = await get_task_by_id(task_id=task_id, client_id=client_id)
 
     # Business rule: Can't move from completed to pending
     if status and task.status == TaskStatus.completed and status == TaskStatus.pending:
+        logger.warning(
+            f"[api.domain.usecases:update_task] Cannot reopen completed task {task_id}"
+        )
         raise InvalidTaskStatusTransitionException(
             detail="Cannot reopen completed task"
         )
 
-    # Update fields (only if provided)
+    # Track what's being updated for logging
+    updates = []
     if title is not None:
         task.title = title
+        updates.append("title")
     if description is not None:
         task.description = description
+        updates.append("description")
     if status is not None:
+        updates.append(f"status={status.value}")
         task.status = status
     if priority is not None:
+        updates.append(f"priority={priority.value}")
         task.priority = priority
     if due_date is not None:
         task.due_date = due_date
+        updates.append("due_date")
 
     task.updated_at = datetime.now(UTC)
 
     await repo_update_task(task=task)
+
+    logger.info(
+        f"[api.domain.usecases:update_task] Task {task_id} updated successfully. "
+        f"Fields changed: {', '.join(updates) if updates else 'none'}"
+    )
+
     return task
 
 
@@ -151,6 +215,14 @@ async def delete_task(
     - Task must belong to requesting client
     - Hard delete (permanent removal)
     """
+    logger.info(
+        f"[api.domain.usecases:delete_task] Deleting task {task_id} for client {client_id}"
+    )
+
     # Verify ownership
     await get_task_by_id(task_id=task_id, client_id=client_id)
     await repo_delete_task(task_id=task_id)
+
+    logger.info(
+        f"[api.domain.usecases:delete_task] Task {task_id} deleted successfully"
+    )

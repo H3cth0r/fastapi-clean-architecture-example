@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
@@ -14,9 +14,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: tasks
-          POSTGRES_PASSWORD: tasks
-          POSTGRES_DB: tasks_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -54,9 +54,9 @@ jobs:
     - name: Run tests
       env:
         ENVIRONMENT: testing
-        POSTGRES_URL: postgres://tasks:tasks@localhost:5432/tasks_db
-        TEST_POSTGRES_BASE_URL: postgres://tasks:tasks@localhost:5432
-        PGDATABASE: tasks_db
+        POSTGRES_URL: postgres://postgres:postgres@localhost:5432/tasks_db
+        TEST_POSTGRES_BASE_URL: postgres://postgres:postgres@localhost:5432
+        PGDATABASE: postgres
         PORT: 8000
         DEFAULT_API_KEY: test-api-key-12345
       run: |

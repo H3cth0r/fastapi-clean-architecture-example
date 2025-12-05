@@ -11,6 +11,7 @@ from api.domain.usecases import (
     list_client_tasks,
     update_task,
 )
+from api.misc.logging import get_logger
 from api.presentation.depends import ClientDep
 from api.presentation.responses import (
     BaseResponse,
@@ -19,6 +20,9 @@ from api.presentation.responses import (
     TaskResponse,
 )
 from api.presentation.validations import CreateTaskRequest, UpdateTaskRequest
+
+# Initialize logger for API resources
+logger = get_logger()
 
 # ============================================================================
 # ROUTERS
@@ -74,6 +78,11 @@ async def create_task_resource(
 
     Task will be created with 'pending' status.
     """
+    logger.info(
+        f"[api.presentation.resources:create_task_resource] "
+        f"POST /tasks - Client {client.client_id} creating task"
+    )
+
     task = await create_task(
         client_id=client.client_id,
         title=body.title,
@@ -110,6 +119,11 @@ async def get_task_resource(
     Returns 404 if task doesn't exist.
     Returns 403 if task doesn't belong to authenticated client.
     """
+    logger.info(
+        f"[api.presentation.resources:get_task_resource] "
+        f"GET /tasks/{task_id} - Client {client.client_id}"
+    )
+
     task = await get_task_by_id(
         task_id=task_id,
         client_id=client.client_id,
@@ -147,6 +161,11 @@ async def list_tasks_resource(
 
     Results are ordered by creation date (newest first).
     """
+    logger.info(
+        f"[api.presentation.resources:list_tasks_resource] "
+        f"GET /tasks - Client {client.client_id}"
+    )
+
     tasks = await list_client_tasks(
         client_id=client.client_id,
         status=status_filter,
@@ -191,6 +210,11 @@ async def update_task_resource(
     - Cannot reopen completed tasks (transition from completed to pending is forbidden)
     - Task must belong to authenticated client
     """
+    logger.info(
+        f"[api.presentation.resources:update_task_resource] "
+        f"PATCH /tasks/{task_id} - Client {client.client_id}"
+    )
+
     task = await update_task(
         task_id=task_id,
         client_id=client.client_id,
@@ -229,6 +253,11 @@ async def delete_task_resource(
     Returns 403 if task doesn't belong to authenticated client.
     Returns 204 No Content on success (no response body).
     """
+    logger.info(
+        f"[api.presentation.resources:delete_task_resource] "
+        f"DELETE /tasks/{task_id} - Client {client.client_id}"
+    )
+
     await delete_task(
         task_id=task_id,
         client_id=client.client_id,

@@ -1,5 +1,4 @@
 import json
-import logging
 
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
@@ -14,9 +13,11 @@ from api.domain.exceptions import (
     UnauthorizedException,
 )
 from api.misc.config import config
+from api.misc.logging import get_logger
 from api.presentation.responses import BaseResponse, ErrorResponse
 
-logger = logging.getLogger(__name__)
+# Use centralized logger
+logger = get_logger()
 
 # Business exceptions that should be logged as warnings, not errors
 BUSINESS_EXCEPTIONS = (

@@ -3,7 +3,7 @@ from uuid import uuid4
 import factory
 from async_factory_boy.factory.tortoise import AsyncTortoiseFactory
 
-from api.data.postgres_models import ClientPostgres, TaskPostgres
+from api.data.postgres_models import ClientPostgres, TaskPostgres, TagPostgres
 from api.domain.enums import TaskPriority, TaskStatus
 
 # ============================================================================
@@ -59,3 +59,16 @@ class TaskPostgresFactory(AsyncTortoiseFactory):
         elements=[priority.value for priority in TaskPriority],
     )
     due_date = None
+
+
+class TagPostgresFactory(AsyncTortoiseFactory):
+    """
+    Async factory for TagPostgres models.
+    """
+    class Meta:
+        model = TagPostgres
+
+    tag_id = factory.Faker("uuid4")
+    # SubFactory ensures a tag is always created with a client parent
+    client = factory.SubFactory(ClientPostgresFactory)
+    title = factory.Faker("word")

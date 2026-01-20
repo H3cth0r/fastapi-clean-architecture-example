@@ -19,6 +19,7 @@ from hypothesis.strategies import (
     sampled_from,
     text,
     uuids,
+    lists,
 )
 
 from api.domain.entities import Client, Task
@@ -258,3 +259,19 @@ def client_with_pending_tasks(
         tasks.append(task)
 
     return client, tasks
+
+
+@composite
+def tags_list_builder(draw, min_size=0, max_size=5):
+    """
+    Generate a list of tag strings.
+    Ex: ["Urgent", "Backend", "Bug"]
+    """
+    return draw(
+        lists(
+            text(min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"),
+            min_size=min_size,
+            max_size=max_size,
+            unique=True # Tags should be unique within a request
+        )
+    )

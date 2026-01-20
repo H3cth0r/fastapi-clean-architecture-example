@@ -482,6 +482,21 @@ psql postgres://postgres:postgres@localhost:5432/tasks_db
 ### Database Migrations with Aerich
 
 ```bash
+# 1. Initialize Aerich configuration (creates aerich.ini)
+docker compose exec api aerich init -t api.misc.config.TORTOISE_ORM
+
+# 2. Create the first migration and apply it (Base state)
+docker compose exec api aerich init-db
+
+
+3. Each time update: It compares your Python code vs the Last known state.
+docker compose exec api aerich migrate --name "added_tags_logic"
+
+4. Apply Migration
+docker compose exec api aerich upgrade
+```
+
+```bash
 # Create new migration after model changes
 docker compose exec api aerich migrate --name "describe_your_changes"
 
@@ -546,6 +561,41 @@ docker compose exec api aerich downgrade
    curl -X DELETE http://localhost:8000/tasks/{task_id}/ \
      -H "X-API-Key: dev-test-api-key-12345"
    ```
+
+7. Create a Task with Tags
+    ```bash
+    curl -X POST "http://localhost:8000/tasks/" \
+      -H "X-API-Key: change-me-to-your-real-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "title": "Implement Login",
+        "description": "Add JWT support",
+        "priority": "high",
+        "tags": ["auth", "security"]
+      }'
+    ```
+
+8. Add Tags to an existing task.
+    ```bash
+    curl -X POST "http://localhost:8000/tasks/<TASK_UUID>/tags" \
+      -H "X-API-Key: change-me-to-your-real-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "tags": ["frontend", "urgent"]
+      }'
+    ```
+
+9. Remove Tag
+    ```bash
+    curl -X DELETE "http://localhost:8000/tasks/<TASK_UUID>/tags/security" \
+      -H "X-API-Key: change-me-to-your-real-api-key"
+    ```
+
+10. List Taks
+```bash
+curl -X GET "http://localhost:8000/tasks/" \
+  -H "X-API-Key: change-me-to-your-real-api-key"
+```
 
 ### Using Swagger UI
 

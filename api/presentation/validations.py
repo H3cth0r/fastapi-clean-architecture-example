@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field
 
 from api.domain.enums import TaskPriority, TaskStatus
 
+from typing import List
+
 
 class CreateTaskRequest(BaseModel):
     """Request body for creating a new task"""
@@ -12,6 +14,7 @@ class CreateTaskRequest(BaseModel):
     description: str | None = None
     priority: TaskPriority = TaskPriority.medium
     due_date: datetime | None = None
+    tags: List[str] = []
 
 
 class UpdateTaskRequest(BaseModel):
@@ -22,3 +25,7 @@ class UpdateTaskRequest(BaseModel):
     status: TaskStatus | None = None
     priority: TaskPriority | None = None
     due_date: datetime | None = None
+
+
+class AddTagsRequest(BaseModel):
+    tags: List[str]

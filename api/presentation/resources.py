@@ -10,6 +10,8 @@ from api.domain.usecases import (
     get_task_by_id,
     list_client_tasks,
     update_task,
+    add_tags_to_task,
+    remove_tag_from_task,
 )
 from api.misc.logging import get_logger
 from api.presentation.depends import ClientDep
@@ -19,7 +21,7 @@ from api.presentation.responses import (
     TaskListResponse,
     TaskResponse,
 )
-from api.presentation.validations import CreateTaskRequest, UpdateTaskRequest
+from api.presentation.validations import CreateTaskRequest, UpdateTaskRequest, AddTagsRequest
 
 # Initialize logger for API resources
 logger = get_logger()
@@ -89,6 +91,7 @@ async def create_task_resource(
         description=body.description,
         priority=body.priority,
         due_date=body.due_date,
+        tags=body.tags,
     )
 
     response_data = TaskResponse(**task.model_dump())
@@ -262,3 +265,65 @@ async def delete_task_resource(
         task_id=task_id,
         client_id=client.client_id,
     )
+
+
+# ============================================================================
+# DELETE TASK
+# ============================================================================
+@tasks_router.post(
+        "/{task_id}/tags",
+        summary="Add tags to task",
+        description="Add one or more tags to an existing task",
+        status_code=status.HTTP_200_OK,
+        response_model=BaseResponse[None],
+)
+async def add_tags_resource(
+    *,
+    client: ClientDep,
+    task_id: UUID,
+    body: AddTagsRequest,
+):
+    """
+    Add tags to an existing task.
+    If tags do not exist, they will be created.
+    """
+    logger.info(
+        f"[resources:add_tags_resource] Adding tags to {task_id} for client {client.client_id}"
+    )
+
+    await add_tags_to_task(
+        task_id=task_id,
+        client_id=client.client_id,
+        tags=body.tags
+    )
+
+    return BaseResponse(success=True, data=None)
+
+
+@tasks_router.delete(
+    "/{task_id}/tags/{tag_name}",
+    summary="Remove tag from task",
+    description="Remove a specific tag from a task",
+    status_code=status.HTTP_200_OK,
+    response_model=BaseResponse[None],
+)
+async def remove_tag_resource(
+    *,
+    client: ClientDep,
+    task_id: UUID,
+    tag_name: str,
+):
+    """
+    Remove a tag from a task by name.
+    """
+    logger.info(
+        f"[resources:remove_tag_resource] Removing tag '{tag_name}' from {task_id}"
+    )
+
+    await remove_tag_from_task(
+        task_id=task_id,
+        client_id=client.client_id,
+        tag_name=tag_name
+    )
+
+    return BaseResponse(success=True, data=None)

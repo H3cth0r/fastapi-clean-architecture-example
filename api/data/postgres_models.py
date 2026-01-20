@@ -24,7 +24,7 @@ class TaskPostgres(Model):
         "models.ClientPostgres",
         related_name="tasks",
         to_field="client_id",
-        on_delete=fields.CASCADE,
+        on_delete=fields.CASCADE
     )
     title = fields.CharField(max_length=200)
     description = fields.TextField(null=True)
@@ -41,3 +41,39 @@ class TaskPostgres(Model):
             ("client_id", "status"),
             ("client_id", "priority"),
         ]
+
+
+class TagPostgres(Model):
+    tag_id = fields.UUIDField(pk=True)
+    client: fields.ForeignKeyRelation["ClientPostgres"] = fields.ForeignKeyField(
+        "models.ClientPostgres",
+        related_name="tags",
+        to_field="client_id",
+        on_delete=fields.CASCADE
+    )
+    title = fields.CharField(max_length=20)
+    created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "tags"
+        # This ensures User A can't have two tags named "Urgent",
+        # but User A and User B can both have "Urgent".
+        unique_together = (("client_id", "title"),)
+
+class TaskTagPostgres(Model):
+    task_tag_id = fields.UUIDField(pk=True)
+    task: fields.ForeignKeyRelation["TaskPostgres"] = fields.ForeignKeyField(
+        "models.TaskPostgres",
+        related_name="task_tags",
+        on_delete=fields.CASCADE
+    )
+    tag: fields.ForeignKeyRelation["TagPostgres"] = fields.ForeignKeyField(
+        "models.TagPostgres",
+        related_name="task_tags",
+        on_delete=fields.CASCADE
+    )
+
+    class Meta:
+        table = "task_tags"
+        # Ensures a specific tag isn't added to the same task twice
+        unique_together = (("task", "tag"),)

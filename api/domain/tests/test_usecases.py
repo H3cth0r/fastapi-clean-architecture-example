@@ -5,13 +5,15 @@ These tests verify business logic across a wide range of inputs
 to ensure robustness and catch edge cases.
 """
 
-from unittest.mock import AsyncMock, patch
+from datetime import UTC, datetime
+from unittest.mock import ANY, AsyncMock, patch
 from uuid import uuid4
 
 import pytest
 from hypothesis import given, settings
 
-from api.domain.enums import TaskStatus
+from api.domain.entities import Task
+from api.domain.enums import TaskPriority, TaskStatus
 from api.domain.exceptions import (
     InvalidTaskStatusTransitionException,
     TaskAccessDeniedException,
@@ -85,6 +87,31 @@ async def test_create_task_sets_pending_status(client):
         assert task.status == TaskStatus.pending
         assert task.client_id == client.client_id
         mock_repo.assert_called_once()
+
+
+@settings(max_examples=10)
+@given(client=active_client_builder(), tags=tags_list_builder(min_size=1))
+@pytest.mark.asyncio
+async def test_create_task_with_tags_calls_tag_repo(client, tags):
+    """Property: Creating a task with tags triggers the tag repository."""
+    # We mock both the create_task repo and the add_tags repo
+    with patch(
+        "api.domain.usecases.repo_create_task", new_callable=AsyncMock
+    ) as mock_create, patch(
+        "api.domain.usecases.repo_add_tags_to_task", new_callable=AsyncMock
+    ) as mock_add_tags:
+
+        await create_task(client_id=client.client_id, title="Task with Tags", tags=tags)
+
+        # Verify repo_add_tags_to_task is hit
+        mock_add_tags.assert_called_once_with(
+            task_id=ANY, client_id=client.client_id, tag_names=tags
+        )
+
+
+# ============================================================================
+# TAGS MANAGEMENT TESTS
+# ============================================================================
 
 
 @settings(max_examples=10)
@@ -576,3 +603,118 @@ async def test_delete_task_raises_not_found_when_missing(task):
                 task_id=task.task_id,
                 client_id=task.client_id,
             )
+
+
+# ============================================================================
+# EXPLICIT COVERAGE TESTS (Deterministic)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_update_task_title_coverage():
+    """Deterministic test to ensure line 129 (title update) is covered."""
+    # 1. Setup a dummy task
+    task_id = uuid4()
+    client_id = uuid4()
+    original_task = Task(
+        task_id=task_id,
+        client_id=client_id,
+        title="Old Title",
+        status=TaskStatus.pending,
+        priority=TaskPriority.medium,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+
+    # 2. Mock the repository calls
+    with patch(
+        "api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock
+    ) as mock_get, patch(
+        "api.domain.usecases.repo_update_task", new_callable=AsyncMock
+    ) as mock_update:
+
+        mock_get.return_value = original_task
+
+        # 3. Action: Update ONLY title
+        await update_task(
+            task_id=task_id, client_id=client_id, title="New Covered Title"
+        )
+
+        # 4. Verify
+        mock_update.assert_called_once()
+        # Verify the object passed to update has the new title
+        updated_task_arg = mock_update.call_args.kwargs["task"]
+        assert updated_task_arg.title == "New Covered Title"
+
+
+@pytest.mark.asyncio
+async def test_update_task_description_coverage():
+    """Deterministic test to ensure line 131 (description update) is covered."""
+    # 1. Setup a dummy task
+    task_id = uuid4()
+    client_id = uuid4()
+    original_task = Task(
+        task_id=task_id,
+        client_id=client_id,
+        title="Title",
+        description="Old Desc",
+        status=TaskStatus.pending,
+        priority=TaskPriority.medium,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+
+    # 2. Mock the repository calls
+    with patch(
+        "api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock
+    ) as mock_get, patch(
+        "api.domain.usecases.repo_update_task", new_callable=AsyncMock
+    ) as mock_update:
+
+        mock_get.return_value = original_task
+
+        # 3. Action: Update ONLY description
+        await update_task(
+            task_id=task_id, client_id=client_id, description="New Covered Desc"
+        )
+
+        # 4. Verify
+        mock_update.assert_called_once()
+        updated_task_arg = mock_update.call_args.kwargs["task"]
+        assert updated_task_arg.description == "New Covered Desc"
+
+
+@pytest.mark.asyncio
+async def test_list_client_tasks_with_status_filter_coverage():
+    """Deterministic test to ensure status filter logic (Line 129) is covered."""
+    client_id = uuid4()
+
+    with patch(
+        "api.domain.usecases.repo_list_client_tasks", new_callable=AsyncMock
+    ) as mock_repo:
+        mock_repo.return_value = []
+
+        # Action: Pass a specific status
+        await list_client_tasks(client_id=client_id, status=TaskStatus.pending)
+
+        # Verify the repo was called with the status
+        mock_repo.assert_called_once()
+        assert mock_repo.call_args.kwargs["status"] == TaskStatus.pending
+
+
+@pytest.mark.asyncio
+async def test_list_client_tasks_with_priority_filter_coverage():
+    """Deterministic test to ensure priority filter logic (Line 131) is covered."""
+    client_id = uuid4()
+
+    with patch(
+        "api.domain.usecases.repo_list_client_tasks", new_callable=AsyncMock
+    ) as mock_repo:
+        mock_repo.return_value = []
+
+        # Action: Pass a specific priority
+        await list_client_tasks(client_id=client_id, priority=TaskPriority.high)
+
+        # Verify the repo was called with the priority
+        mock_repo.assert_called_once()
+        assert mock_repo.call_args.kwargs["priority"] == TaskPriority.high

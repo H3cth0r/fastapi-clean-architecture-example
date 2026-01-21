@@ -128,3 +128,26 @@ async def test_remove_tag_from_task():
 
     # Assertion: Tag definition still exists (so user doesn't lose 'work' from autocomplete)
     assert await TagPostgres.filter(client_id=client.client_id, title="work").exists()
+
+
+async def test_add_tags_with_empty_list_does_nothing():
+    """
+    Scenario: Calling add_tags with an empty list.
+    Expected: Should return immediately (covering the 'if not tag_names' check).
+    """
+    # 1. Setup Data
+    client = await ClientPostgresFactory.create()
+    task = await TaskPostgresFactory.create(client=client)
+
+    # 2. Action: Pass empty list
+    await repo_add_tags_to_task(
+        task_id=task.task_id, client_id=client.client_id, tag_names=[]
+    )
+
+    # 3. Assertion: No tags should be created
+    count_tags = await TagPostgres.filter(client_id=client.client_id).count()
+    assert count_tags == 0
+
+    # 4. Assertion: No links should be created
+    count_links = await TaskTagPostgres.filter(task_id=task.task_id).count()
+    assert count_links == 0

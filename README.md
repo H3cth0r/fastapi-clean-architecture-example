@@ -563,6 +563,7 @@ docker compose exec api aerich downgrade
    ```
 
 7. Create a Task with Tags
+
     ```bash
     curl -X POST "http://localhost:8000/tasks/" \
       -H "X-API-Key: change-me-to-your-real-api-key" \
@@ -576,6 +577,7 @@ docker compose exec api aerich downgrade
     ```
 
 8. Add Tags to an existing task.
+
     ```bash
     curl -X POST "http://localhost:8000/tasks/<TASK_UUID>/tags" \
       -H "X-API-Key: change-me-to-your-real-api-key" \
@@ -586,12 +588,14 @@ docker compose exec api aerich downgrade
     ```
 
 9. Remove Tag
+
     ```bash
     curl -X DELETE "http://localhost:8000/tasks/<TASK_UUID>/tags/security" \
       -H "X-API-Key: change-me-to-your-real-api-key"
     ```
 
 10. List Taks
+
 ```bash
 curl -X GET "http://localhost:8000/tasks/" \
   -H "X-API-Key: change-me-to-your-real-api-key"

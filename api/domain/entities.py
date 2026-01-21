@@ -32,14 +32,17 @@ class Task(BaseModel):
 
 
 class Tag(BaseModel):
-    """ Tags entity """
+    """Tags entity"""
+
     tag_id: UUID
     client_id: UUID
     title: str = "Tag"
     created_at: datetime
 
+
 class TaskTag(BaseModel):
-    """ Represents the link between a Task and a Tag """
+    """Represents the link between a Task and a Tag"""
+
     task_tag_id: UUID
     task_id: UUID
     tag_id: UUID

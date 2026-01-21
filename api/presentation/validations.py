@@ -1,10 +1,9 @@
 from datetime import datetime
+from typing import List
 
 from pydantic import BaseModel, Field
 
 from api.domain.enums import TaskPriority, TaskStatus
-
-from typing import List
 
 
 class CreateTaskRequest(BaseModel):

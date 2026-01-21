@@ -2,13 +2,13 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from api.data.postgres_repositories import (
+    repo_add_tags_to_task,
     repo_create_task,
     repo_delete_task,
     repo_get_task_by_id,
     repo_list_client_tasks,
-    repo_update_task,
-    repo_add_tags_to_task,
     repo_remove_tag_from_task,
+    repo_update_task,
 )
 from api.domain.entities import Task
 from api.domain.enums import TaskPriority, TaskStatus
@@ -63,9 +63,7 @@ async def create_task(
 
     if tags:
         await repo_add_tags_to_task(
-                task_id=task.task_id,
-                client_id=client_id,
-                tag_names=tags
+            task_id=task.task_id, client_id=client_id, tag_names=tags
         )
 
     logger.info(
@@ -238,13 +236,8 @@ async def delete_task(
     )
 
 
-async def add_tags_to_task(
-        *,
-        task_id: UUID,
-        client_id: UUID,
-        tags: list[str]
-) -> None:
-    """ Add tags to an existing task """
+async def add_tags_to_task(*, task_id: UUID, client_id: UUID, tags: list[str]) -> None:
+    """Add tags to an existing task"""
     # 1. Verify ownership (Task must exist and belong to client)
     await get_task_by_id(task_id=task_id, client_id=client_id)
 
@@ -255,15 +248,16 @@ async def add_tags_to_task(
 
 
 async def remove_tag_from_task(
-        *,
-        task_id: UUID,
-        client_id: UUID,
-        tag_name: str
+    *, task_id: UUID, client_id: UUID, tag_name: str
 ) -> None:
     # 1. Verify ownership
     await get_task_by_id(task_id=task_id, client_id=client_id)
 
     # 2. Remove tag
-    await repo_remove_tag_from_task(task_id=task_id, client_id=client_id, tag_name=tag_name)
+    await repo_remove_tag_from_task(
+        task_id=task_id, client_id=client_id, tag_name=tag_name
+    )
 
-    logger.info(f"[usecases:remove_tag_from_task] Removed tag '{tag_name}' from task {task_id}")
+    logger.info(
+        f"[usecases:remove_tag_from_task] Removed tag '{tag_name}' from task {task_id}"
+    )

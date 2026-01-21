@@ -1,6 +1,11 @@
 from uuid import UUID, uuid4
 
-from api.data.postgres_models import ClientPostgres, TaskPostgres, TagPostgres, TaskTagPostgres
+from api.data.postgres_models import (
+    ClientPostgres,
+    TagPostgres,
+    TaskPostgres,
+    TaskTagPostgres,
+)
 from api.domain.entities import Client, Task
 from api.domain.enums import TaskPriority, TaskStatus
 from api.domain.postgres_adapters import client_postgres_adapter, task_postgres_adapter
@@ -151,14 +156,16 @@ async def repo_delete_task(*, task_id: UUID) -> None:
     )
 
 
-
-async def repo_add_tags_to_task(*, task_id: UUID, client_id: UUID, tag_names: list[str]) -> None:
+async def repo_add_tags_to_task(
+    *, task_id: UUID, client_id: UUID, tag_names: list[str]
+) -> None:
     """
     1. Checks if tags exist for client.
     2. Creates missing tags.
     3. Links tags to the task (idempotent).
     """
-    if not tag_names: return
+    if not tag_names:
+        return
 
     logger.debug(
         f"[api.data.postgres_repositories:repo_add_tags_to_task] "
@@ -168,16 +175,12 @@ async def repo_add_tags_to_task(*, task_id: UUID, client_id: UUID, tag_names: li
     for name in tag_names:
         # 1. Get or create the tag for this client. We ensure tags are unique per client.
         tag, _ = await TagPostgres.get_or_create(
-                client_id=client_id,
-                title=name,
-                defaults={"tag_id": uuid4()}
+            client_id=client_id, title=name, defaults={"tag_id": uuid4()}
         )
 
         # 2. Link Tag to Task. get_or_create ensures we don't duplicate the link
         await TaskTagPostgres.get_or_create(
-                task_id=task_id,
-                tag_id=tag.tag_id,
-                defaults={"task_tag_id": uuid4()}
+            task_id=task_id, tag_id=tag.tag_id, defaults={"task_tag_id": uuid4()}
         )
 
     logger.debug(
@@ -185,7 +188,9 @@ async def repo_add_tags_to_task(*, task_id: UUID, client_id: UUID, tag_names: li
     )
 
 
-async def repo_remove_tag_from_task(*, task_id: UUID, tag_name: str, client_id: UUID) -> None:
+async def repo_remove_tag_from_task(
+    *, task_id: UUID, tag_name: str, client_id: UUID
+) -> None:
     """
     Unlink a specific tag froma task by name
     """

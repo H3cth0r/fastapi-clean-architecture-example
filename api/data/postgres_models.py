@@ -24,7 +24,7 @@ class TaskPostgres(Model):
         "models.ClientPostgres",
         related_name="tasks",
         to_field="client_id",
-        on_delete=fields.CASCADE
+        on_delete=fields.CASCADE,
     )
     title = fields.CharField(max_length=200)
     description = fields.TextField(null=True)
@@ -49,7 +49,7 @@ class TagPostgres(Model):
         "models.ClientPostgres",
         related_name="tags",
         to_field="client_id",
-        on_delete=fields.CASCADE
+        on_delete=fields.CASCADE,
     )
     title = fields.CharField(max_length=20)
     created_at = fields.DatetimeField(auto_now_add=True)
@@ -60,17 +60,14 @@ class TagPostgres(Model):
         # but User A and User B can both have "Urgent".
         unique_together = (("client_id", "title"),)
 
+
 class TaskTagPostgres(Model):
     task_tag_id = fields.UUIDField(pk=True)
     task: fields.ForeignKeyRelation["TaskPostgres"] = fields.ForeignKeyField(
-        "models.TaskPostgres",
-        related_name="task_tags",
-        on_delete=fields.CASCADE
+        "models.TaskPostgres", related_name="task_tags", on_delete=fields.CASCADE
     )
     tag: fields.ForeignKeyRelation["TagPostgres"] = fields.ForeignKeyField(
-        "models.TagPostgres",
-        related_name="task_tags",
-        on_delete=fields.CASCADE
+        "models.TagPostgres", related_name="task_tags", on_delete=fields.CASCADE
     )
 
     class Meta:

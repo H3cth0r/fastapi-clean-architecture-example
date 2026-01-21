@@ -1,5 +1,5 @@
 import pytest
-from uuid import uuid4
+
 from api.data.fakers import ClientPostgresFactory, TaskPostgresFactory
 from api.data.postgres_models import TagPostgres, TaskTagPostgres
 from api.data.postgres_repositories import (
@@ -24,9 +24,7 @@ async def test_add_tags_creates_and_links_tags():
 
     # 2. Action
     await repo_add_tags_to_task(
-        task_id=task.task_id,
-        client_id=client.client_id,
-        tag_names=tags_to_add
+        task_id=task.task_id, client_id=client.client_id, tag_names=tags_to_add
     )
 
     # Assertions
@@ -58,7 +56,9 @@ async def test_add_tags_is_idempotent():
     )
 
     # Assertions
-    count_tags = await TagPostgres.filter(client_id=client.client_id, title="work").count()
+    count_tags = await TagPostgres.filter(
+        client_id=client.client_id, title="work"
+    ).count()
     count_links = await TaskTagPostgres.filter(task_id=task.task_id).count()
 
     assert count_tags == 1
@@ -81,8 +81,12 @@ async def test_tags_are_independent_per_user():
     task_b = await TaskPostgresFactory.create(client=client_b)
 
     # Both add "Urgent"
-    await repo_add_tags_to_task(task_id=task_a.task_id, client_id=client_a.client_id, tag_names=["Urgent"])
-    await repo_add_tags_to_task(task_id=task_b.task_id, client_id=client_b.client_id, tag_names=["Urgent"])
+    await repo_add_tags_to_task(
+        task_id=task_a.task_id, client_id=client_a.client_id, tag_names=["Urgent"]
+    )
+    await repo_add_tags_to_task(
+        task_id=task_b.task_id, client_id=client_b.client_id, tag_names=["Urgent"]
+    )
 
     # Assertions
     all_urgent_tags = await TagPostgres.filter(title="Urgent").all()
@@ -92,7 +96,9 @@ async def test_tags_are_independent_per_user():
 
     # Verify User A's task is linked to User A's tag
     tag_a = await TagPostgres.get(client_id=client_a.client_id, title="Urgent")
-    is_linked_a = await TaskTagPostgres.filter(task_id=task_a.task_id, tag_id=tag_a.tag_id).exists()
+    is_linked_a = await TaskTagPostgres.filter(
+        task_id=task_a.task_id, tag_id=tag_a.tag_id
+    ).exists()
     assert is_linked_a is True
 
 

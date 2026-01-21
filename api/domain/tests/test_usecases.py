@@ -22,17 +22,17 @@ from api.domain.tests.strategies import (
     client_with_tasks,
     completed_task_builder,
     pending_task_builder,
-    task_builder,
     tags_list_builder,
+    task_builder,
 )
 from api.domain.usecases import (
+    add_tags_to_task,
     create_task,
     delete_task,
     get_task_by_id,
     list_client_tasks,
-    update_task,
-    add_tags_to_task,
     remove_tag_from_task,
+    update_task,
 )
 
 # ============================================================================
@@ -92,16 +92,17 @@ async def test_create_task_sets_pending_status(client):
 @pytest.mark.asyncio
 async def test_add_tags_to_task_success(task, tags):
     """Property: Adding tags to an existing task calls the repository."""
-    with patch("api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock) as mock_get, \
-         patch("api.domain.usecases.repo_add_tags_to_task", new_callable=AsyncMock) as mock_tag_repo:
+    with patch(
+        "api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock
+    ) as mock_get, patch(
+        "api.domain.usecases.repo_add_tags_to_task", new_callable=AsyncMock
+    ) as mock_tag_repo:
 
         # Mock finding the task
         mock_get.return_value = task
 
         await add_tags_to_task(
-            task_id=task.task_id,
-            client_id=task.client_id,
-            tags=tags
+            task_id=task.task_id, client_id=task.client_id, tags=tags
         )
 
         # Ensure we verified ownership first
@@ -109,9 +110,7 @@ async def test_add_tags_to_task_success(task, tags):
 
         # Ensure we called the add logic
         mock_tag_repo.assert_called_once_with(
-            task_id=task.task_id,
-            client_id=task.client_id,
-            tag_names=tags
+            task_id=task.task_id, client_id=task.client_id, tag_names=tags
         )
 
 
@@ -120,15 +119,15 @@ async def test_add_tags_to_task_success(task, tags):
 @pytest.mark.asyncio
 async def test_add_tags_enforces_ownership(task):
     """Property: Cannot add tags to someone else's task."""
-    with patch("api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock) as mock_get:
+    with patch(
+        "api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock
+    ) as mock_get:
         mock_get.return_value = task
         different_client = uuid4()
 
         with pytest.raises(TaskAccessDeniedException):
             await add_tags_to_task(
-                task_id=task.task_id,
-                client_id=different_client,
-                tags=["urgent"]
+                task_id=task.task_id, client_id=different_client, tags=["urgent"]
             )
 
 
@@ -139,15 +138,16 @@ async def test_remove_tag_from_task_success(task):
     """Property: Removing a tag calls the repository."""
     tag_to_remove = "urgent"
 
-    with patch("api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock) as mock_get, \
-         patch("api.domain.usecases.repo_remove_tag_from_task", new_callable=AsyncMock) as mock_remove_repo:
+    with patch(
+        "api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock
+    ) as mock_get, patch(
+        "api.domain.usecases.repo_remove_tag_from_task", new_callable=AsyncMock
+    ) as mock_remove_repo:
 
         mock_get.return_value = task
 
         await remove_tag_from_task(
-            task_id=task.task_id,
-            client_id=task.client_id,
-            tag_name=tag_to_remove
+            task_id=task.task_id, client_id=task.client_id, tag_name=tag_to_remove
         )
 
         # Ensure ownership check
@@ -155,9 +155,7 @@ async def test_remove_tag_from_task_success(task):
 
         # Ensure remove logic called
         mock_remove_repo.assert_called_once_with(
-            task_id=task.task_id,
-            client_id=task.client_id,
-            tag_name=tag_to_remove
+            task_id=task.task_id, client_id=task.client_id, tag_name=tag_to_remove
         )
 
 
@@ -166,15 +164,15 @@ async def test_remove_tag_from_task_success(task):
 @pytest.mark.asyncio
 async def test_remove_tag_enforces_ownership(task):
     """Property: Cannot remove tags from someone else's task."""
-    with patch("api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock) as mock_get:
+    with patch(
+        "api.domain.usecases.repo_get_task_by_id", new_callable=AsyncMock
+    ) as mock_get:
         mock_get.return_value = task
         different_client = uuid4()
 
         with pytest.raises(TaskAccessDeniedException):
             await remove_tag_from_task(
-                task_id=task.task_id,
-                client_id=different_client,
-                tag_name="urgent"
+                task_id=task.task_id, client_id=different_client, tag_name="urgent"
             )
 
 

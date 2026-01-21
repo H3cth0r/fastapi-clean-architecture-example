@@ -5,13 +5,13 @@ from fastapi.encoders import jsonable_encoder
 
 from api.domain.enums import TaskPriority, TaskStatus
 from api.domain.usecases import (
+    add_tags_to_task,
     create_task,
     delete_task,
     get_task_by_id,
     list_client_tasks,
-    update_task,
-    add_tags_to_task,
     remove_tag_from_task,
+    update_task,
 )
 from api.misc.logging import get_logger
 from api.presentation.depends import ClientDep
@@ -21,7 +21,11 @@ from api.presentation.responses import (
     TaskListResponse,
     TaskResponse,
 )
-from api.presentation.validations import CreateTaskRequest, UpdateTaskRequest, AddTagsRequest
+from api.presentation.validations import (
+    AddTagsRequest,
+    CreateTaskRequest,
+    UpdateTaskRequest,
+)
 
 # Initialize logger for API resources
 logger = get_logger()
@@ -271,11 +275,11 @@ async def delete_task_resource(
 # DELETE TASK
 # ============================================================================
 @tasks_router.post(
-        "/{task_id}/tags",
-        summary="Add tags to task",
-        description="Add one or more tags to an existing task",
-        status_code=status.HTTP_200_OK,
-        response_model=BaseResponse[None],
+    "/{task_id}/tags",
+    summary="Add tags to task",
+    description="Add one or more tags to an existing task",
+    status_code=status.HTTP_200_OK,
+    response_model=BaseResponse[None],
 )
 async def add_tags_resource(
     *,
@@ -291,11 +295,7 @@ async def add_tags_resource(
         f"[resources:add_tags_resource] Adding tags to {task_id} for client {client.client_id}"
     )
 
-    await add_tags_to_task(
-        task_id=task_id,
-        client_id=client.client_id,
-        tags=body.tags
-    )
+    await add_tags_to_task(task_id=task_id, client_id=client.client_id, tags=body.tags)
 
     return BaseResponse(success=True, data=None)
 
@@ -321,9 +321,7 @@ async def remove_tag_resource(
     )
 
     await remove_tag_from_task(
-        task_id=task_id,
-        client_id=client.client_id,
-        tag_name=tag_name
+        task_id=task_id, client_id=client.client_id, tag_name=tag_name
     )
 
     return BaseResponse(success=True, data=None)

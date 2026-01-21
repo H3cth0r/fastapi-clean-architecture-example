@@ -3,7 +3,7 @@ from uuid import uuid4
 import factory
 from async_factory_boy.factory.tortoise import AsyncTortoiseFactory
 
-from api.data.postgres_models import ClientPostgres, TaskPostgres, TagPostgres
+from api.data.postgres_models import ClientPostgres, TagPostgres, TaskPostgres
 from api.domain.enums import TaskPriority, TaskStatus
 
 # ============================================================================
@@ -65,6 +65,7 @@ class TagPostgresFactory(AsyncTortoiseFactory):
     """
     Async factory for TagPostgres models.
     """
+
     class Meta:
         model = TagPostgres
 

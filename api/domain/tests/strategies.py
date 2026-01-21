@@ -14,12 +14,12 @@ from hypothesis.strategies import (
     composite,
     datetimes,
     from_regex,
+    lists,
     none,
     one_of,
     sampled_from,
     text,
     uuids,
-    lists,
 )
 
 from api.domain.entities import Client, Task
@@ -269,9 +269,13 @@ def tags_list_builder(draw, min_size=0, max_size=5):
     """
     return draw(
         lists(
-            text(min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"),
+            text(
+                min_size=1,
+                max_size=20,
+                alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_",
+            ),
             min_size=min_size,
             max_size=max_size,
-            unique=True # Tags should be unique within a request
+            unique=True,  # Tags should be unique within a request
         )
     )

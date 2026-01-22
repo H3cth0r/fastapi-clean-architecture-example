@@ -5,12 +5,13 @@ from api.data.postgres_repositories import (
     repo_add_tags_to_task,
     repo_create_task,
     repo_delete_task,
+    repo_get_tags_by_task_id,
     repo_get_task_by_id,
     repo_list_client_tasks,
     repo_remove_tag_from_task,
     repo_update_task,
 )
-from api.domain.entities import Task
+from api.domain.entities import Tag, Task
 from api.domain.enums import TaskPriority, TaskStatus
 from api.domain.exceptions import (
     InvalidTaskStatusTransitionException,
@@ -261,3 +262,24 @@ async def remove_tag_from_task(
     logger.info(
         f"[usecases:remove_tag_from_task] Removed tag '{tag_name}' from task {task_id}"
     )
+
+
+async def get_tags_by_task_id(*, task_id: UUID, client_id: UUID) -> list[Tag]:
+    """Get all tags for a task"""
+    logger.info(
+        f"[api.domain.usecases:get_tags_by_task_id] "
+        f"Getting tags for task {task_id}, client {client_id}"
+    )
+
+    # Verify ownership
+    await get_task_by_id(task_id=task_id, client_id=client_id)
+
+    # Get tags
+    tags = await repo_get_tags_by_task_id(task_id=task_id)
+
+    logger.info(
+        f"[api.domain.usecases:get_tags_by_task_id] "
+        f"Retrieved {len(tags)} tags for task {task_id}"
+    )
+
+    return tags

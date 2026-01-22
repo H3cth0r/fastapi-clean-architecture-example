@@ -6,7 +6,7 @@ from api.data.postgres_models import (
     TaskPostgres,
     TaskTagPostgres,
 )
-from api.domain.entities import Client, Task
+from api.domain.entities import Client, Tag, Task
 from api.domain.enums import TaskPriority, TaskStatus
 from api.domain.postgres_adapters import client_postgres_adapter, task_postgres_adapter
 from api.misc.logging import get_logger
@@ -207,3 +207,27 @@ async def repo_remove_tag_from_task(
     logger.debug(
         f"[api.data.postgres_repositories:repo_remove_tag_from_task] Tag removed (if it existed)"
     )
+
+
+async def repo_get_tags_by_task_id(*, task_id: UUID) -> list[Tag]:
+    """Get all tags assicuated with a task"""
+    logger.debug(
+        f"[api.data.postgres_repositories:repo_get_tags_by_task_id] "
+        f"Get tags by task_id {task_id}"
+    )
+    task_tags = await TaskTagPostgres.filter(task_id=task_id).prefetch_related("tag")
+    tags = [
+        Tag(
+            tag_id=tt.tag.tag_id,
+            client_id=tt.tag.client_id,
+            title=tt.tag.title,
+            created_at=tt.tag.created_at,
+        )
+        for tt in task_tags
+    ]
+    logger.debug(
+        f"[api.data.postgres_repositories:repo_get_tags_by_task_id] "
+        f"Found {len(tags)} tags for task {task_id}"
+    )
+
+    return tags

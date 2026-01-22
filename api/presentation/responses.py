@@ -70,8 +70,17 @@ class TaskResponse(BaseModel):
     updated_at: datetime
 
 
+class TaskWithTagsResponse(BaseModel):
+    """SIngle"""
+
+
 class TaskListResponse(BaseModel):
     """List of tasks response"""
 
     tasks: list[TaskResponse]
+    count: int
+
+
+class TagListResponse(BaseModel):
+    tags: list[dict]
     count: int

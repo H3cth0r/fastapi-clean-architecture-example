@@ -8,6 +8,7 @@ from api.domain.usecases import (
     add_tags_to_task,
     create_task,
     delete_task,
+    get_tags_by_task_id,
     get_task_by_id,
     list_client_tasks,
     remove_tag_from_task,
@@ -18,6 +19,7 @@ from api.presentation.depends import ClientDep
 from api.presentation.responses import (
     BaseResponse,
     HealthCheckResponse,
+    TagListResponse,
     TaskListResponse,
     TaskResponse,
 )
@@ -325,3 +327,33 @@ async def remove_tag_resource(
     )
 
     return BaseResponse(success=True, data=None)
+
+
+@tasks_router.get(
+    "/{task_id}/tags",
+    summary="Get tags from task",
+    description="Get all the tags from a task",
+    status_code=status.HTTP_200_OK,
+    response_model=BaseResponse[TagListResponse],
+)
+async def get_tags_from_task(
+    *,
+    client: ClientDep,
+    task_id: UUID,
+):
+    """
+    Get all tags associated with a task.
+    """
+    logger.info(
+        f"[resources:get_tags_from_task] Getting tags from {task_id} for client {client.client_id}"
+    )
+
+    tags = await get_tags_by_task_id(task_id=task_id, client_id=client.client_id)
+
+    tag_responses = [
+        {"tag_id": tag.tag_id, "title": tag.title, "created_at": tag.created_at}
+        for tag in tags
+    ]
+    response_data = TagListResponse(tags=tag_responses, count=len(tags))
+    json = jsonable_encoder(response_data)
+    return BaseResponse(success=True, data=json)
